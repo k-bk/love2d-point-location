@@ -89,6 +89,8 @@ end
 
 function draw_region(region)
    local r,g,b = love.graphics.getColor()
+   local lw = love.graphics.getLineWidth()
+   love.graphics.setLineWidth(2)
    for _,tri in ipairs(triangles[region]) do
       local t = to_table(tri)
       local mid_x = .5 * (.5 * (t[1] + t[3]) + t[5])
@@ -100,5 +102,6 @@ function draw_region(region)
       love.graphics.polygon("line", t)
       love.graphics.print(tostring(region), mid_x, mid_y)
    end
+   love.graphics.setLineWidth(lw)
    love.graphics.setColor(r,g,b)
 end

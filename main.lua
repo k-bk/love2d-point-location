@@ -12,6 +12,7 @@ function love.load()
    state = "main"
 
    edges = {}
+   polygon = {}
    mouse_position = v2(0,0)
 end
 
@@ -27,23 +28,51 @@ end
 function love.mousereleased(x, y, button)
    if button == 1 then
       UI.mousereleased { x = x, y = y }
-
       if state == "drawing" then
-         local to = v2(x,y)
+
+         local to = mouse_position
          first = first or to
+
          if last then
             edges[last] = edges[last] or {}
             edges[last][to] = region_id
          end
+
+         if last and ((to-last):len() < 15 or (to-first):len() < 15) then
+            if #polygon > 2 then
+               edges[last] = edges[last] or {}
+               edges[last][first] = region_id
+               triangulate(edges, polygon, region_id)
+               reset = true
+            end
+         end
          last = to
          table.insert(polygon, to)
-         print(to)
+
+         if reset then
+            polygon = {}
+            first = nil
+            last = nil
+            reset = false
+            generate_id()
+         end
       end
    end
 end
 
 function love.mousemoved(x, y)
+   min_dist = math.huge
    mouse_position = v2(x,y)
+
+   for point,_ in pairs(edges) do
+      local dist = (mouse_position - point):len()
+      if dist < 15 then
+         if dist < min_dist then
+            min_dist = dist
+            mouse_position = point
+         end
+      end
+   end
    UI.mousemoved { x = x, y = y }
 end
 
@@ -55,22 +84,23 @@ function love.keypressed(key)
          love.draw = draw_menu
       end
    elseif key == "enter" or key == "space" then
-      edges[last] = edges[last] or {}
-      edges[last][first] = region_id
-
-      for from,e in pairs(edges) do
-         for to,region in pairs(e) do
-            print(from, to, region)
-         end
-      end
-      state = "main"
-      triangulate(edges, polygon, region_id)
    end
 end
 
 
 -- Polygon
 
+function process_polygon()
+   local to = v2(x,y)
+   first = first or to
+   if last then
+      edges[last] = edges[last] or {}
+      edges[last][to] = region_id
+   end
+   last = to
+   table.insert(polygon, to)
+   print(to)
+end
 
 
 -- Drawing
@@ -83,29 +113,38 @@ function love.draw()
          draw_region(i)
       end
    end
-   draw_points()
+   if polygon then draw_unfinished(polygon) end
 end
 
-function draw_points()
-   local grab_radius = 15
-
-   local r,g,b = love.graphics.getColor()
+function draw_unfinished(polygon)
+   local r,g,b,a = love.graphics.getColor()
    local ps = love.graphics.getPointSize()
-   local radius
-   for point,_ in pairs(edges) do
-      if (point - mouse_position):len() < grab_radius then
-         love.graphics.setPointSize(7)
-      else
-         love.graphics.setPointSize(4)
+   local lw = love.graphics.getLineWidth()
+   local shape = {}
+
+   if #polygon > 0 then
+      for _,point in ipairs(polygon) do
+         table.insert(shape, point.x)
+         table.insert(shape, point.y)
       end
-      love.graphics.setColor(1,1,1)
-      love.graphics.points(point.x, point.y)
-      love.graphics.setColor(0,0,0)
-      love.graphics.points(point.x, point.y)
    end
 
+   table.insert(shape, mouse_position.x)
+   table.insert(shape, mouse_position.y)
+
+   love.graphics.setLineWidth(2)
+   love.graphics.setColor(0,0,0,.5)
+   if #polygon > 2 then love.graphics.polygon("fill", shape) end
+   love.graphics.setColor(0,0,0,1)
+   if #polygon > 2 then love.graphics.polygon("line", shape) end
+   love.graphics.setPointSize(6)
+   love.graphics.points(shape)
+   love.graphics.setPointSize(10)
+   love.graphics.points(mouse_position.x, mouse_position.y)
+
+   love.graphics.setLineWidth(lw)
    love.graphics.setPointSize(ps)
-   love.graphics.setColor(r,g,b)
+   love.graphics.setColor(r,g,b,a)
 end
 
 function view.main()
@@ -123,6 +162,5 @@ end
 
 function view.drawing()
    UI.draw { x = 10, y = 10,
-      UI.button( "Zapisz", function() save_to_file() end ),
    }
 end
