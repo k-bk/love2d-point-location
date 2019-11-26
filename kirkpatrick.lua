@@ -126,7 +126,48 @@ function step_algorithm(edges)
       end
       return new_edges, independent
    end
-   return edges
+   return edges, nil
+end
+
+function det3(a,b,c)
+    return (a.x-c.x) * (b.y-c.y)
+         - (a.y-c.y) * (b.x-c.x)
+end
+
+function orient(a,b,c)
+   if a == b or b == c or c == a then return 0 end
+   local d = det3(a,b,c)
+   local eps = 1e-10
+   if d > eps then
+      return 1
+   elseif d < -eps then
+      return -1
+   else
+      return 0
+   end
+end
+
+function point_in_triangle(point, tri)
+   for _,e in ipairs(tri) do
+      if orient(e[1], e[2], point) == -1 then return false end
+   end
+   return true
+end
+
+function find_point(point, region)
+   region = region or region_id
+   if not child[region] then
+      return "Point was found in region "..tostring(region)
+   end
+
+   for deeper,_ in pairs(child[region]) do
+      for _,tri in ipairs(triangles[deeper]) do
+         if point_in_triangle(point, tri) then
+            return find_point(point, deeper)
+         end
+      end
+   end
+   return "Point is outside"
 end
 
 ----

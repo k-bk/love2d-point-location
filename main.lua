@@ -9,6 +9,7 @@ love.graphics.setLineJoin("bevel")
 UI.font = font_body
 
 function love.load()
+   canvas = love.graphics.newCanvas(2000, 2000)
    love.graphics.setBackgroundColor{ 1,1,1 }
    state = "main"
    drawn_layer = layer
@@ -32,7 +33,9 @@ end
 function love.mousereleased(x, y, button)
    if button == 1 then
       UI.mousereleased { x = x, y = y }
-      if state == "drawing" then
+      if state == "main" and algoritm_ended then
+         where_is_the_point = find_point(mouse_position)
+      elseif state == "drawing" then
 
          local to = mouse_position
          first = first or to
@@ -113,6 +116,8 @@ end
 local view = {}
 
 function love.draw()
+   love.graphics.setCanvas(canvas)
+   love.graphics.clear()
    for l = 1,drawn_layer do
       for i = 1,region_id do
          if triangles[i] then
@@ -121,13 +126,19 @@ function love.draw()
       end
       if independent[drawn_layer] then
          for _,point in ipairs(independent[drawn_layer]) do
-            love.graphics.circle("fill", point.x, point.y, 20)
+            love.graphics.setColor(1,1,1)
+            love.graphics.circle("fill", point.x, point.y, 10)
+            love.graphics.setColor(0,0,0)
+            love.graphics.circle("line", point.x, point.y, 10)
+            love.graphics.setColor(1,1,1)
          end
       end
    end
    if state == "drawing" and polygon then draw_unfinished(polygon) end
    view[state]()
    if snapped then draw_cursor() end
+   love.graphics.setCanvas()
+   love.graphics.draw(canvas)
 end
 
 function draw_cursor()
@@ -176,15 +187,18 @@ function view.main()
       UI.button( "Uruchom algorytm", function() 
          layers[layer] = edges
          edges, removed = step_algorithm(edges) 
-         independent[layer-1] = removed
+         if removed then
+            independent[layer-1] = removed
+         else
+            algoritm_ended = true
+         end
          drawn_layer = layer
       end ),
       UI.label{ "" },
-      {
-         UI.label{ ("[%d] warstwa:  "):format(drawn_layer) }, 
-         UI.button( "Góra", function() drawn_layer = math.min(layer, drawn_layer + 1) end ),
-         UI.button( "Dół", function() drawn_layer = math.max(1, drawn_layer - 1) end ),
-      },
+      UI.label{ ("[%d] warstwa:  "):format(drawn_layer) }, 
+      UI.button( "Góra", function() drawn_layer = math.min(layer, drawn_layer + 1) end ),
+      UI.button( "Dół", function() drawn_layer = math.max(1, drawn_layer - 1) end ),
+      UI.label{ "Szukany punkt jest w wielokącie: "..tostring(where_is_the_point) }
    }
 end
 
