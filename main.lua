@@ -35,7 +35,7 @@ function love.mousereleased(x, y, button)
       UI.mousereleased { x = x, y = y }
       if state == "main" and algoritm_ended then
          where_is_the_point = find_point(mouse_position)
-      elseif state == "drawing" then
+      elseif state == "drawing" and mouse_position.x > (ui_width or 0) + 10 then
 
          local to = mouse_position
          first = first or to
@@ -134,8 +134,10 @@ function love.draw()
          end
       end
    end
-   if state == "drawing" and polygon then draw_unfinished(polygon) end
-   view[state]()
+   if state == "drawing" and polygon then 
+      draw_unfinished(polygon) 
+   end
+   view()
    if snapped then draw_cursor() end
    love.graphics.setCanvas()
    love.graphics.draw(canvas)
@@ -175,8 +177,8 @@ function draw_unfinished(polygon)
    love.graphics.setColor(r,g,b,a)
 end
 
-function view.main()
-   UI.draw { x = 10, y = 10,
+function view()
+   ui_width,_ = UI.draw { x = 10, y = 10,
       UI.button( "Wczytaj siatkę", function() end ),
       UI.button( "Rysuj", function() 
          edges = {}
@@ -198,12 +200,10 @@ function view.main()
       UI.label{ ("[%d] warstwa:  "):format(drawn_layer) }, 
       UI.button( "Góra", function() drawn_layer = math.min(layer, drawn_layer + 1) end ),
       UI.button( "Dół", function() drawn_layer = math.max(1, drawn_layer - 1) end ),
-      UI.label{ "Szukany punkt jest w wielokącie: "..tostring(where_is_the_point) }
+      UI.label{ "Punkt w wielokącie: " },
+      UI.label{ tostring(where_is_the_point) },
+      UI.label{ "Punkt 'wewnętrzny'?  " },
+      UI.label{ tostring(inner_label) },
    }
-end
-
-function view.drawing()
-   UI.draw { x = 10, y = 10,
-      UI.label{ "Is vertex inside?  "..tostring(inner_label) },
-   }
+   love.graphics.line(ui_width + 10, 0, ui_width + 10, 2000)
 end

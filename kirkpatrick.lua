@@ -49,6 +49,14 @@ function nearest_to(vertex, polygon)
    return min
 end
 
+function ccw_triangle(points)
+   local a = v2(points[1], points[2])
+   local b = v2(points[3], points[4])
+   local c = v2(points[5], points[6])
+   if orient(a,b,c) == 1 then return a,b,c end
+   if orient(a,b,c) ==-1 then print("achtung") return a,c,b end
+end
+
 function triangulate(edges, polygon, region)
    triangles[region] = {}
    -- convert polygon to format accepted by love.math.triangulate
@@ -60,19 +68,16 @@ function triangulate(edges, polygon, region)
    local tri = love.math.triangulate(p)
 
    -- use new triangles to update the regions
-   local from, to
    for _,t in ipairs(tri) do
-      local new_tri = {}
-      for _,i in ipairs{ {1,5},{5,3},{3,1} } do
-         local x1,y1 = i[1], i[1]+1
-         local x2,y2 = i[2], i[2]+1
-         from = nearest_to(v2(t[x1],t[y1]), polygon)
-         to   = nearest_to(v2(t[x2],t[y2]), polygon)
-         edges[from] = edges[from] or {}
-         edges[from][to] = region
-         table.insert(new_tri, { from, to })
-      end
-      new_tri.layer = layer
+      local a,b,c = ccw_triangle(t)
+      a,b,c = nearest_to(a,polygon), nearest_to(b,polygon), nearest_to(c,polygon)
+      edges[a] = edges[a] or {}
+      edges[b] = edges[b] or {}
+      edges[c] = edges[c] or {}
+      edges[a][b] = region
+      edges[b][c] = region
+      edges[c][a] = region
+      local new_tri = { {a,b}, {b,c}, {c,a}, layer = layer }
       table.insert(triangles[region], new_tri)
    end
 end
