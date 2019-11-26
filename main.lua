@@ -4,6 +4,7 @@ require "kirkpatrick"
 
 font_body = love.graphics.newFont("Cantarell-Regular.otf", 15)
 font_title = love.graphics.newFont("Cantarell-Regular.otf", 18)
+love.graphics.setLineJoin("bevel")
 
 UI.font = font_body
 
@@ -64,14 +65,17 @@ function love.mousemoved(x, y)
    min_dist = math.huge
    mouse_position = v2(x,y)
 
+   snapped = false
    for point,_ in pairs(edges) do
       local dist = (mouse_position - point):len()
       if dist < 15 then
+         snapped = true
          if dist < min_dist then
             min_dist = dist
             mouse_position = point
          end
       end
+      inner_label = inner(edges, mouse_position)
    end
    UI.mousemoved { x = x, y = y }
 end
@@ -83,7 +87,6 @@ function love.keypressed(key)
       else
          love.draw = draw_menu
       end
-   elseif key == "enter" or key == "space" then
    end
 end
 
@@ -113,7 +116,15 @@ function love.draw()
          draw_region(i)
       end
    end
-   if polygon then draw_unfinished(polygon) end
+   if state == "drawing" and polygon then draw_unfinished(polygon) end
+   if snapped then draw_cursor() end
+end
+
+function draw_cursor()
+   local ps = love.graphics.getPointSize()
+   love.graphics.setPointSize(10)
+   love.graphics.points({{ mouse_position.x, mouse_position.y, .8,0,0,1 }})
+   love.graphics.setPointSize(ps)
 end
 
 function draw_unfinished(polygon)
@@ -122,11 +133,9 @@ function draw_unfinished(polygon)
    local lw = love.graphics.getLineWidth()
    local shape = {}
 
-   if #polygon > 0 then
-      for _,point in ipairs(polygon) do
-         table.insert(shape, point.x)
-         table.insert(shape, point.y)
-      end
+   for _,point in ipairs(polygon) do
+      table.insert(shape, point.x)
+      table.insert(shape, point.y)
    end
 
    table.insert(shape, mouse_position.x)
@@ -134,13 +143,11 @@ function draw_unfinished(polygon)
 
    love.graphics.setLineWidth(2)
    love.graphics.setColor(0,0,0,.5)
-   if #polygon > 2 then love.graphics.polygon("fill", shape) end
+   if #shape > 4 then love.graphics.polygon("fill", shape) end
    love.graphics.setColor(0,0,0,1)
-   if #polygon > 2 then love.graphics.polygon("line", shape) end
+   if #shape > 4 then love.graphics.polygon("line", shape) end
    love.graphics.setPointSize(6)
    love.graphics.points(shape)
-   love.graphics.setPointSize(10)
-   love.graphics.points(mouse_position.x, mouse_position.y)
 
    love.graphics.setLineWidth(lw)
    love.graphics.setPointSize(ps)
@@ -162,5 +169,6 @@ end
 
 function view.drawing()
    UI.draw { x = 10, y = 10,
+      UI.label{ "Is vertex inside?  "..tostring(inner_label) },
    }
 end

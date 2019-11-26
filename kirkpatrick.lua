@@ -10,14 +10,25 @@ end
 
 function neighbourhood(edges, vertex) 
    local n = {}
-   for _,e in pairs(edges[vertex]) do
-      table.insert(n, e.to)
+   for to,region in pairs(edges[vertex]) do
+      table.insert(n, to)
    end
    return table.sort(vertex, function(p,q) 
       local angle1 = math.atan2(vertex.y - p.y, vertex.x - p.x)
       local angle2 = math.atan2(vertex.y - q.y, vertex.x - q.x)
       return angle1 < angle2
    end)
+end
+
+function inner(edges, vertex)
+   if not edges[vertex] then return nil end
+
+   for to,region in pairs(edges[vertex]) do
+      if not (edges[to] and edges[to][vertex]) then
+         return false
+      end
+   end
+   return true
 end
 
 function nearest_to(vertex, polygon)
