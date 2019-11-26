@@ -11,8 +11,10 @@ end
 
 function neighbourhood(edges, vertex) 
    local n = {}
+   print("neighbours")
    for to,region in pairs(edges[vertex]) do
       table.insert(n, to)
+      print(to)
    end
    table.sort(n, function(p,q) 
       local angle1 = math.atan2(vertex.y - p.y, vertex.x - p.x)
@@ -53,17 +55,19 @@ function ccw_triangle(points)
    local a = v2(points[1], points[2])
    local b = v2(points[3], points[4])
    local c = v2(points[5], points[6])
-   if orient(a,b,c) == 1 then return a,b,c end
-   if orient(a,b,c) ==-1 then print("achtung") return a,c,b end
+   if orient(a,b,c) == 1 then return a,c,b end
+   if orient(a,b,c) ==-1 then print("achtung") return a,b,c end
 end
 
 function triangulate(edges, polygon, region)
    triangles[region] = {}
    -- convert polygon to format accepted by love.math.triangulate
+   print("Triangulating")
    local p = {}
    for _,v in ipairs(polygon) do
       table.insert(p, v.x)
       table.insert(p, v.y)
+      print(v)
    end
    local tri = love.math.triangulate(p)
 
@@ -99,7 +103,7 @@ function region_from_neighbours(edges, vertex)
    edges[vertex] = nil
 end
 
-function step_algorithm(edges)
+function independent(edges)
    local blocked = {}
    local independent = {}
    for vertex,_ in pairs(edges) do
@@ -114,24 +118,23 @@ function step_algorithm(edges)
          end
       end
    end
-   blocked = nil
+   return independent
+end
 
-   if #independent > 0 then
-      layer = layer + 1
-      local new_edges = {}
-      for from,e in pairs(edges) do
-         new_edges[from] = {}
-         for to,region in pairs(e) do
-            new_edges[from][to] = region
-         end
+function step_algorithm(edges, independent_set)
+   layer = layer + 1
+   local new_edges = {}
+   for from, to_set in pairs(edges) do
+      new_edges[from] = {}
+      for to,region in pairs(to_set) do
+         new_edges[from][to] = region
       end
-
-      for _,vertex in ipairs(independent) do
-         region_from_neighbours(new_edges, vertex)
-      end
-      return new_edges, independent
    end
-   return edges, nil
+
+   for _, to_remove in ipairs(independent_set) do
+      region_from_neighbours(new_edges, to_remove)
+   end
+   return new_edges
 end
 
 function det3(a,b,c)
@@ -154,7 +157,7 @@ end
 
 function point_in_triangle(point, tri)
    for _,e in ipairs(tri) do
-      if orient(e[1], e[2], point) == -1 then return false end
+      if orient(e[1], e[2], point) == 1 then return false end
    end
    return true
 end
@@ -191,6 +194,18 @@ function to_table(edges)
    return tab
 end
 
+function arrows(t)
+   for i = 1,#t,2 do
+      local from = v2(t[i], t[i+1])
+      local to = v2(t[(i+1) % #t + 1], t[(i+2) % #t + 1])
+      local arr = (0.2 * from) + (0.8 * to)
+      love.graphics.setColor(1,.8,0)
+      love.graphics.circle("fill", arr.x, arr.y, 7)
+      love.graphics.setColor(0,0,0)
+      love.graphics.circle("fill", arr.x, arr.y, 7)
+   end
+end
+
 function draw_region(region, drawn_layer)
    local r,g,b = love.graphics.getColor()
    local lw = love.graphics.getLineWidth()
@@ -205,6 +220,7 @@ function draw_region(region, drawn_layer)
          love.graphics.polygon("fill", t)
          love.graphics.setColor(0,0,0,1)
          love.graphics.polygon("line", t)
+         if debug then arrows(t) end
          love.graphics.print(tostring(region), mid_x, mid_y)
       end
    end

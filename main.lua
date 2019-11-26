@@ -14,7 +14,8 @@ function love.load()
    state = "main"
    drawn_layer = layer
 
-   independent = {}
+   debug = false
+   removed = {}
    edges = {}
    layers = {}
    polygon = {}
@@ -52,6 +53,9 @@ function love.mousereleased(x, y, button)
                triangulate(edges, polygon, region_id)
                reset = true
             end
+            if edges then
+               removed[layer] = independent(edges)
+            end
          end
          last = to
          table.insert(polygon, to)
@@ -87,13 +91,6 @@ function love.mousemoved(x, y)
 end
 
 function love.keypressed(key)
-   if key == "escape" then
-      if state == "main" then
-         love.event.quit()
-      else
-         state = "main"
-      end
-   end
 end
 
 
@@ -124,8 +121,8 @@ function love.draw()
             draw_region(i, l)
          end
       end
-      if independent[drawn_layer] then
-         for _,point in ipairs(independent[drawn_layer]) do
+      if removed[drawn_layer] then
+         for _,point in ipairs(removed[drawn_layer]) do
             love.graphics.setColor(1,1,1)
             love.graphics.circle("fill", point.x, point.y, 10)
             love.graphics.setColor(0,0,0)
@@ -179,22 +176,21 @@ end
 
 function view()
    ui_width,_ = UI.draw { x = 10, y = 10,
-      UI.button( "Wczytaj siatkę", function() end ),
+      UI.button( "debug", function() debug = not debug end ),
       UI.button( "Rysuj", function() 
          edges = {}
          polygon = {}
          state = "drawing" 
          generate_id()
       end ),
-      UI.button( "Uruchom algorytm", function() 
+      UI.button( "Popraw triangulację", function() 
          layers[layer] = edges
-         edges, removed = step_algorithm(edges) 
-         if removed then
-            independent[layer-1] = removed
-         else
-            algoritm_ended = true
+         local to_remove = independent(edges)
+         if #to_remove > 0 then
+            removed[layer] = to_remove
+            edges = step_algorithm(edges, to_remove) 
+            drawn_layer = layer
          end
-         drawn_layer = layer
       end ),
       UI.label{ "" },
       UI.label{ ("[%d] warstwa:  "):format(drawn_layer) }, 
