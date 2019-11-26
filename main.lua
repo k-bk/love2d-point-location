@@ -185,11 +185,10 @@ function view()
       end ),
       UI.button( "Popraw triangulację", function() 
          layers[layer] = edges
-         local to_remove = independent(edges)
-         if #to_remove > 0 then
-            removed[layer] = to_remove
-            edges = step_algorithm(edges, to_remove) 
+         if #removed[layer] > 0 then
+            edges = step_algorithm(edges, removed[layer]) 
             drawn_layer = layer
+            removed[layer] = independent(edges)
          end
       end ),
       UI.label{ "" },
