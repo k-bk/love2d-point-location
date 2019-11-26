@@ -11,8 +11,11 @@ UI.font = font_body
 function love.load()
    love.graphics.setBackgroundColor{ 1,1,1 }
    state = "main"
+   drawn_layer = layer
 
+   independent = {}
    edges = {}
+   layers = {}
    polygon = {}
    mouse_position = v2(0,0)
 end
@@ -82,10 +85,10 @@ end
 
 function love.keypressed(key)
    if key == "escape" then
-      if love.draw == draw_menu then
+      if state == "main" then
          love.event.quit()
       else
-         love.draw = draw_menu
+         state = "main"
       end
    end
 end
@@ -110,13 +113,20 @@ end
 local view = {}
 
 function love.draw()
-   view[state]()
-   for i = 1,region_id do
-      if triangles[i] then
-         draw_region(i)
+   for l = 1,drawn_layer do
+      for i = 1,region_id do
+         if triangles[i] then
+            draw_region(i, l)
+         end
+      end
+      if independent[drawn_layer] then
+         for _,point in ipairs(independent[drawn_layer]) do
+            love.graphics.circle("fill", point.x, point.y, 20)
+         end
       end
    end
    if state == "drawing" and polygon then draw_unfinished(polygon) end
+   view[state]()
    if snapped then draw_cursor() end
 end
 
@@ -163,7 +173,18 @@ function view.main()
          state = "drawing" 
          generate_id()
       end ),
-      UI.button( "Uruchom algorytm", function() end ),
+      UI.button( "Uruchom algorytm", function() 
+         layers[layer] = edges
+         edges, removed = step_algorithm(edges) 
+         independent[layer-1] = removed
+         drawn_layer = layer
+      end ),
+      UI.label{ "" },
+      {
+         UI.label{ ("[%d] warstwa:  "):format(drawn_layer) }, 
+         UI.button( "Góra", function() drawn_layer = math.min(layer, drawn_layer + 1) end ),
+         UI.button( "Dół", function() drawn_layer = math.max(1, drawn_layer - 1) end ),
+      },
    }
 end
 
