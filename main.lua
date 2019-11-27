@@ -194,7 +194,7 @@ function view()
    UI.draw { x = ui_width + 30, y = 10,
       {
          UI.label({ ("[%d] warstwa"):format(drawn_layer) }, font_title),
-         point_to_find and UI.label({ find_point(point_to_find) }, font_title),
+         point_to_find and UI.label({ find_point(point_to_find) or "Punkt poza obszarem" }, font_title),
       }
    }
 
