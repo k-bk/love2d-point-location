@@ -41,21 +41,11 @@ function love.mousereleased(x, y, button)
          local to = mouse_position
          first = first or to
 
-         if last then
-            edges[last] = edges[last] or {}
-            edges[last][to] = region_id
-         end
-
-         if last and ((to-last):len() < 15 or (to-first):len() < 15) then
-            if #polygon > 2 then
-               edges[last] = edges[last] or {}
-               edges[last][first] = region_id
-               triangulate(edges, polygon, region_id)
-               reset = true
-            end
-            if edges then
-               removed[layer] = independent(edges)
-            end
+         if last and ((to-last):len() < 15 or (to-first):len() < 15) 
+            and #polygon > 2 
+         then
+            triangulate(edges, polygon, region_id)
+            reset = true
          end
          last = to
          table.insert(polygon, to)
@@ -67,6 +57,8 @@ function love.mousereleased(x, y, button)
             reset = false
             generate_id()
          end
+
+         if edges then removed[layer] = independent(edges) end
       end
    end
 end
@@ -192,7 +184,6 @@ function view()
          end
       end ),
       UI.label{ "" },
-      UI.label{ ("[%d] warstwa:  "):format(drawn_layer) }, 
       UI.button( "Góra", function() drawn_layer = math.min(layer, drawn_layer + 1) end ),
       UI.button( "Dół", function() drawn_layer = math.max(1, drawn_layer - 1) end ),
       UI.label{ "Punkt w wielokącie: " },
@@ -200,5 +191,9 @@ function view()
       UI.label{ "Punkt 'wewnętrzny'?  " },
       UI.label{ tostring(inner_label) },
    }
+   UI.draw { x = ui_width + 20, y = 10,
+      UI.label({ ("[%d] warstwa"):format(drawn_layer) }, font_title)
+   }
+
    love.graphics.line(ui_width + 10, 0, ui_width + 10, 2000)
 end
