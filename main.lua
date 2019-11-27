@@ -11,15 +11,16 @@ UI.font = font_body
 function love.load()
    canvas = love.graphics.newCanvas(2000, 2000)
    love.graphics.setBackgroundColor{ 1,1,1 }
-   state = "main"
+   state = "drawing"
    drawn_layer = layer
 
    debug = false
    removed = {}
    edges = {}
-   layers = {}
    polygon = {}
+   layers = {}
    mouse_position = v2(0,0)
+   ui_width = 0
 end
 
 function love.update(dt)
@@ -34,9 +35,12 @@ end
 function love.mousereleased(x, y, button)
    if button == 1 then
       UI.mousereleased { x = x, y = y }
-      if state == "main" and algoritm_ended then
-         where_is_the_point = find_point(mouse_position)
-      elseif state == "drawing" and mouse_position.x > (ui_width or 0) + 10 then
+      if state == "none" then
+         -- do nothing
+      elseif state == "search" then
+         point_to_find = mouse_position
+         state = "none"
+      elseif state == "drawing" and mouse_position.x > ui_width + 10 then
 
          local to = mouse_position
          first = first or to
@@ -127,15 +131,16 @@ function love.draw()
       draw_unfinished(polygon) 
    end
    view()
-   if snapped then draw_cursor() end
+   if snapped then draw_red_point(mouse_position) end
+   if point_to_find then draw_red_point(point_to_find) end
    love.graphics.setCanvas()
    love.graphics.draw(canvas)
 end
 
-function draw_cursor()
+function draw_red_point(p)
    local ps = love.graphics.getPointSize()
    love.graphics.setPointSize(10)
-   love.graphics.points({{ mouse_position.x, mouse_position.y, .8,0,0,1 }})
+   love.graphics.points({{ p.x, p.y, .8,0,0,1 }})
    love.graphics.setPointSize(ps)
 end
 
@@ -150,8 +155,10 @@ function draw_unfinished(polygon)
       table.insert(shape, point.y)
    end
 
-   table.insert(shape, mouse_position.x)
-   table.insert(shape, mouse_position.y)
+   if mouse_position.x > ui_width + 10 then
+      table.insert(shape, mouse_position.x)
+      table.insert(shape, mouse_position.y)
+   end
 
    love.graphics.setLineWidth(2)
    love.graphics.setColor(0,0,0,.5)
@@ -169,31 +176,27 @@ end
 function view()
    ui_width,_ = UI.draw { x = 10, y = 10,
       UI.button( "debug", function() debug = not debug end ),
-      UI.button( "Rysuj", function() 
-         edges = {}
-         polygon = {}
-         state = "drawing" 
-         generate_id()
-      end ),
-      UI.button( "Popraw triangulację", function() 
+      UI.button( "Ulepsz triangulację", function() 
+         state = "none"
          layers[layer] = edges
-         if #removed[layer] > 0 then
+         if removed[layer] and #removed[layer] > 0 then
             edges = step_algorithm(edges, removed[layer]) 
             drawn_layer = layer
             removed[layer] = independent(edges)
          end
       end ),
-      UI.label{ "" },
+      UI.label{""},
       UI.button( "Góra", function() drawn_layer = math.min(layer, drawn_layer + 1) end ),
       UI.button( "Dół", function() drawn_layer = math.max(1, drawn_layer - 1) end ),
-      UI.label{ "Punkt w wielokącie: " },
-      UI.label{ tostring(where_is_the_point) },
-      UI.label{ "Punkt 'wewnętrzny'?  " },
-      UI.label{ tostring(inner_label) },
+      UI.button( "Szukaj punktu", function() state = "search" end ),
+      UI.label{ ("Punkt %s:"):format(point_to_find) },
    }
-   UI.draw { x = ui_width + 20, y = 10,
-      UI.label({ ("[%d] warstwa"):format(drawn_layer) }, font_title)
+   UI.draw { x = ui_width + 30, y = 10,
+      {
+         UI.label({ ("[%d] warstwa"):format(drawn_layer) }, font_title),
+         point_to_find and UI.label({ find_point(point_to_find) }, font_title),
+      }
    }
 
-   love.graphics.line(ui_width + 10, 0, ui_width + 10, 2000)
+   love.graphics.line(ui_width + 20, 0, ui_width + 20, 2000)
 end

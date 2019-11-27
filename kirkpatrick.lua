@@ -3,7 +3,7 @@ triangles = {}
 color = {}
 layer = 1
 
-region_id = 0
+region_id = 1
 function generate_id()
    region_id = region_id + 1
    return region_id
@@ -162,20 +162,40 @@ function point_in_triangle(point, tri)
    return true
 end
 
-function find_point(point, region)
-   region = region or region_id
-   if not child[region] then
-      return "Point was found in region "..tostring(region)
-   end
-
-   for deeper,_ in pairs(child[region]) do
-      for _,tri in ipairs(triangles[deeper]) do
-         if point_in_triangle(point, tri) then
-            return find_point(point, deeper)
-         end
+function find_point(point)
+   -- find root regions
+   local roots = {}
+   for from,e in pairs(edges) do
+      for to,region in pairs(e) do
+         print(from, to, region)
+         roots[region] = true
       end
    end
-   return "Point is outside"
+
+   for root,_ in pairs(roots) do
+      local search = find_in_region(point, root)
+      if search then return search end
+   end
+end
+
+function find_in_region(point, region)
+   print("looking for ", point, "in", region)
+   local found = false
+   for _,tri in ipairs(triangles[region]) do
+      if point_in_triangle(point, tri) then
+         found = true
+      end
+   end
+
+   if found and (not child[region]) then return tostring(region) end
+   if not found then return nil end
+
+   for deeper,_ in pairs(child[region]) do
+      local search = find_in_region(point, deeper)
+      if search then
+         return ("%d -> %s"):format(region, search)
+      end
+   end
 end
 
 ----
