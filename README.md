@@ -6,3 +6,4 @@ To run the visualization on linux type `make` in cloned repository.
 It will automatically download `love` executable and necessary libraries.
 
 ![demonstration](demo.gif)
+*Written in [Lua](https://www.lua.org/) using awesome [love2d](https://love2d.org/) framework.*
