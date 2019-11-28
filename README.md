@@ -5,4 +5,4 @@ Demonstration of Kirkpatrick's algorithm for optimal search in planar subdivisio
 To run the visualization on linux type `make` in cloned repository.
 It will automatically download `love` executable and necessary libraries.
 
-![demonstration](#demo.gif)
+![demonstration](demo.gif)
