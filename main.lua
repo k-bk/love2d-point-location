@@ -42,8 +42,8 @@ function love.mousereleased(x, y, button)
          local to = mouse_position
          first = first or to
 
-         if last and ((to-last):len() < 15 or (to-first):len() < 15) 
-            and #polygon > 2 
+         if not edges[to] then edges[to] = {} end
+         if last and (to == last or to == first) and #polygon > 2 
          then
             triangulate(edges, polygon, region_id)
             polygon = {}
@@ -62,41 +62,25 @@ end
 
 function love.mousemoved(x, y)
    mouse_position = v2(x,y)
-
    snapped = false
+
+   local closest
    local min_dist = math.huge
    for point,_ in pairs(edges) do
-      local dist = (mouse_position - point):len()
-      if dist < 15 then
+      local dist = (point - mouse_position):len()
+      if dist < 15 and dist < min_dist then
+         closest = point
          snapped = true
-         if dist < min_dist then
-            min_dist = dist
-            mouse_position = point
-         end
+         min_dist = dist
       end
    end
+   mouse_position = closest or mouse_position
 
    UI.mousemoved { x = x, y = y }
 end
 
 
--- Polygon
-
-function process_polygon()
-   local to = v2(x,y)
-   first = first or to
-   if last then
-      edges[last] = edges[last] or {}
-      edges[last][to] = region_id
-   end
-   last = to
-   table.insert(polygon, to)
-   print(to)
-end
-
-
 -- Drawing
-local view = {}
 
 function love.draw()
    love.graphics.setCanvas(canvas)
@@ -170,6 +154,7 @@ function view()
          state = "none"
          layers[layer] = edges
          if removed[layer] and #removed[layer] > 0 then
+            layer = layer + 1
             edges = step_algorithm(edges, removed[layer]) 
             drawn_layer = layer
             removed[layer] = independent(edges)

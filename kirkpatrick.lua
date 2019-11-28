@@ -118,7 +118,6 @@ function independent(edges)
 end
 
 function step_algorithm(edges, independent_set)
-   layer = layer + 1
    local new_edges = {}
    for from, to_set in pairs(edges) do
       new_edges[from] = {}
@@ -181,8 +180,8 @@ function find_in_region(point, region)
       end
    end
 
-   if found and (not child[region]) then return tostring(region) end
    if not found then return nil end
+   if found and (not child[region]) then return tostring(region) end
 
    for deeper,_ in pairs(child[region]) do
       local search = find_in_region(point, deeper)
