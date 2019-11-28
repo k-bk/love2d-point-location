@@ -11,10 +11,8 @@ end
 
 function neighbourhood(edges, vertex) 
    local n = {}
-   print("neighbours")
    for to,region in pairs(edges[vertex]) do
       table.insert(n, to)
-      print(to)
    end
    table.sort(n, function(p,q) 
       local angle1 = math.atan2(vertex.y - p.y, vertex.x - p.x)
@@ -56,18 +54,16 @@ function ccw_triangle(points)
    local b = v2(points[3], points[4])
    local c = v2(points[5], points[6])
    if orient(a,b,c) == 1 then return a,c,b end
-   if orient(a,b,c) ==-1 then print("achtung") return a,b,c end
+   if orient(a,b,c) ==-1 then return a,b,c end
 end
 
 function triangulate(edges, polygon, region)
    triangles[region] = {}
    -- convert polygon to format accepted by love.math.triangulate
-   print("Triangulating")
    local p = {}
    for _,v in ipairs(polygon) do
       table.insert(p, v.x)
       table.insert(p, v.y)
-      print(v)
    end
    local tri = love.math.triangulate(p)
 
@@ -167,7 +163,6 @@ function find_point(point)
    local roots = {}
    for from,e in pairs(edges) do
       for to,region in pairs(e) do
-         print(from, to, region)
          roots[region] = true
       end
    end
@@ -179,7 +174,6 @@ function find_point(point)
 end
 
 function find_in_region(point, region)
-   print("looking for ", point, "in", region)
    local found = false
    for _,tri in ipairs(triangles[region]) do
       if point_in_triangle(point, tri) then
@@ -198,7 +192,8 @@ function find_in_region(point, region)
    end
 end
 
-----
+
+-- Drawing procedures
 
 function random_color()
    local r = function() return (love.math.random() + 1) / 2 end

@@ -23,9 +23,6 @@ function love.load()
    ui_width = 0
 end
 
-function love.update(dt)
-end
-
 function love.mousepressed(x, y, button)
    if button == 1 then
       UI.mousepressed { x = x, y = y }
@@ -49,17 +46,13 @@ function love.mousereleased(x, y, button)
             and #polygon > 2 
          then
             triangulate(edges, polygon, region_id)
-            reset = true
-         end
-         last = to
-         table.insert(polygon, to)
-
-         if reset then
             polygon = {}
             first = nil
             last = nil
-            reset = false
             generate_id()
+         else
+            last = to
+            table.insert(polygon, to)
          end
 
          if edges then removed[layer] = independent(edges) end
@@ -68,10 +61,10 @@ function love.mousereleased(x, y, button)
 end
 
 function love.mousemoved(x, y)
-   min_dist = math.huge
    mouse_position = v2(x,y)
 
    snapped = false
+   local min_dist = math.huge
    for point,_ in pairs(edges) do
       local dist = (mouse_position - point):len()
       if dist < 15 then
@@ -81,12 +74,9 @@ function love.mousemoved(x, y)
             mouse_position = point
          end
       end
-      inner_label = inner(edges, mouse_position)
    end
-   UI.mousemoved { x = x, y = y }
-end
 
-function love.keypressed(key)
+   UI.mousemoved { x = x, y = y }
 end
 
 
