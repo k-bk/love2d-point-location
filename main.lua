@@ -166,7 +166,7 @@ end
 function view()
    ui_width,_ = UI.draw { x = 10, y = 10,
       UI.button( "debug", function() debug = not debug end ),
-      UI.button( "Ulepsz triangulację", function() 
+      UI.button( "Refine triangulation", function() 
          state = "none"
          layers[layer] = edges
          if removed[layer] and #removed[layer] > 0 then
@@ -176,15 +176,15 @@ function view()
          end
       end ),
       UI.label{""},
-      UI.button( "Góra", function() drawn_layer = math.min(layer, drawn_layer + 1) end ),
-      UI.button( "Dół", function() drawn_layer = math.max(1, drawn_layer - 1) end ),
-      UI.button( "Szukaj punktu", function() state = "search" end ),
+      UI.button( "Up", function() drawn_layer = math.min(layer, drawn_layer + 1) end ),
+      UI.button( "Down", function() drawn_layer = math.max(1, drawn_layer - 1) end ),
+      UI.button( "Find point", function() state = "search" end ),
       UI.label{ ("Punkt %s:"):format(point_to_find) },
    }
    UI.draw { x = ui_width + 30, y = 10,
       {
-         UI.label({ ("[%d] warstwa"):format(drawn_layer) }, font_title),
-         point_to_find and UI.label({ find_point(point_to_find) or "Punkt poza obszarem" }, font_title),
+         UI.label({ ("[%d] layer"):format(drawn_layer) }, font_title),
+         point_to_find and UI.label({ find_point(point_to_find) or "Point out of region" }, font_title),
       }
    }
 
