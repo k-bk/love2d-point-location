@@ -82,6 +82,24 @@ function triangulate(edges, polygon, region)
    end
 end
 
+function region_remove(edges, removed_region)
+   for from, to_set in pairs(edges) do
+      local remove_vertex = true
+      for to,region in pairs(to_set) do
+         if region == removed_region then
+            edges[from][to] = nil
+         else
+            remove_vertex = false
+         end
+      end
+      if remove_vertex then
+         edges[from] = nil
+      end
+   end
+   triangles[removed_region] = nil
+end
+
+
 function region_from_neighbours(edges, vertex)
    generate_id()
    child[region_id] = {}

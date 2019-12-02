@@ -9,12 +9,13 @@ love.graphics.setLineJoin("bevel")
 UI.font = font_body
 
 function love.load()
-   canvas = love.graphics.newCanvas(2000, 2000)
+   canvas = love.graphics.newCanvas()
    love.graphics.setBackgroundColor{ 1,1,1 }
    state = "drawing"
    drawn_layer = layer
 
    debug = false
+   drawing_history = {}
    removed = {}
    edges = {}
    polygon = {}
@@ -47,6 +48,7 @@ function love.mousereleased(x, y, button)
          then
             triangulate(edges, polygon, region_id)
             polygon = {}
+            table.insert(drawing_history, region_id)
             first = nil
             last = nil
             generate_id()
@@ -77,6 +79,10 @@ function love.mousemoved(x, y)
    mouse_position = closest or mouse_position
 
    UI.mousemoved { x = x, y = y }
+end
+
+function love.resize()
+   canvas = love.graphics.newCanvas()
 end
 
 
@@ -148,30 +154,41 @@ function draw_unfinished(polygon)
 end
 
 function view()
-   ui_width,_ = UI.draw { x = 10, y = 10,
-      UI.button( "debug", function() debug = not debug end ),
-      UI.button( "Refine triangulation", function() 
+   ui_width, ui_height = UI.draw { x = 10, y = 10,
+      UI.button { "debug", on_click = function() debug = not debug end },
+      UI.button { "Refine triangulation", on_click = function() 
          state = "none"
          layers[layer] = edges
-         if removed[layer] and #removed[layer] > 0 then
+         local to_remove = removed[layer]
+         if to_remove and #to_remove > 0 then
             layer = layer + 1
-            edges = step_algorithm(edges, removed[layer]) 
+            edges = step_algorithm(edges, to_remove)
             drawn_layer = layer
             removed[layer] = independent(edges)
          end
-      end ),
-      UI.label{""},
-      UI.button( "Up", function() drawn_layer = math.min(layer, drawn_layer + 1) end ),
-      UI.button( "Down", function() drawn_layer = math.max(1, drawn_layer - 1) end ),
-      UI.button( "Find point", function() state = "search" end ),
-      UI.label{ ("Punkt %s:"):format(point_to_find) },
+      end },
+      UI.label {""},
+      UI.button { "Up", on_click = function() drawn_layer = math.min(layer, drawn_layer + 1) end },
+      UI.button { "Down", on_click = function() drawn_layer = math.max(1, drawn_layer - 1) end },
+      UI.button { "Find point", on_click = function() state = "search" end },
+      UI.label { ("Punkt %s:"):format(point_to_find) },
    }
-   UI.draw { x = ui_width + 30, y = 10,
-      {
-         UI.label({ ("[%d] layer"):format(drawn_layer) }, font_title),
-         point_to_find and UI.label({ find_point(point_to_find) or "Point out of region" }, font_title),
+   if state == "drawing" then
+      UI.draw { x = 10, y = ui_height + 30,
+         UI.button { "Undo", on_click = function() 
+            region_remove(edges, drawing_history[#drawing_history])
+            table.remove(drawing_history)
+            removed[layer] = independent(edges)
+         end },
       }
-   }
+   else
+      UI.draw { x = ui_width + 30, y = 10,
+         {
+            UI.label { ("[%d] layer"):format(drawn_layer), font = font_title },
+            point_to_find and UI.label { find_point(point_to_find) or "Point out of region", font = font_title },
+         }
+      }
+   end
 
    love.graphics.line(ui_width + 20, 0, ui_width + 20, 2000)
 end
